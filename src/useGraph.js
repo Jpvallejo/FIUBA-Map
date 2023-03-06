@@ -351,7 +351,7 @@ const useGraph = (loginHook) => {
           setLoadingGraph(false);
         })
         .catch((e) => {
-          aprobar("CBC", 0);
+          // aprobar("CBC", 0);
           actualizarNiveles()
           network.fit();
           setLoadingGraph(false);
@@ -363,7 +363,7 @@ const useGraph = (loginHook) => {
     if (!nodes?.carrera || nodes.carrera !== user.carrera?.id) return;
     if (user.orientacion) changeOrientacion(user.orientacion.nombre);
     setDisplayedNode("");
-    aprobar("CBC", 0);
+    // aprobar("CBC", 0);
     actualizarNiveles()
     network.fit();
   }, [nodes, user.finDeCarrera, user.orientacion]);

@@ -48,9 +48,32 @@ class Node {
   isHabilitada(ctx) {
     const { getters, getNode, creditosTotales } = ctx;
     const from = getters.NodesFrom(this.id);
+    const currentNode = getNode(this.id);
     let todoAprobado = true;
     for (let id of from) {
       const m = getNode(id);
+      todoAprobado &= m.aprobada;
+    }
+    if (this.requiere) {
+      if (this.requiereCBC) {
+        todoAprobado &= creditosTotales >= this.requiere;
+      } else {
+        todoAprobado &= (creditosTotales - 38) >= this.requiere
+      }
+    };
+    return todoAprobado;
+  }
+
+  isHabilitadaParcial(ctx) {
+    const { getters, getNode, creditosTotales } = ctx;
+    const currentNode = getNode(this.id);
+    const from = getters.NodesFrom(this.id);
+    let todoAprobado = true;
+    for (let id of from) {
+      const m = getNode(id);
+      if(currentNode.correlativas?.split("-").includes(id)){
+        console.log("a");
+      }
       todoAprobado &= m.aprobada;
     }
     if (this.requiere) {
@@ -69,6 +92,7 @@ class Node {
     if (this.aprobada && this.nota >= 0) grupoDefault = "Aprobadas";
     else if (this.nota === -1) grupoDefault = "En Final";
     else if (this.isHabilitada(ctx)) grupoDefault = "Habilitadas";
+    else if (this.isHabilitadaParcial(ctx)) grupoDefault = "HabilitadaParcial";
     this.group = grupoDefault;
 
     let labelDefault = breakWords(this.materia);

@@ -73,6 +73,9 @@ class Node {
       const m = getNode(id);
       if(currentNode.correlativas?.split("-").includes(id)){
         console.log("a");
+        // si esta en la columna de final para cursar tiene que estar aprobada.
+        // si esta en la columna de final para acreditar, tiene que estar en final
+        // si esta en la columna de tp para cursar, tiene que estar en final -- AGREGAR TAMBIEN EN IS HABILITADA porque puede que necesite algunos finales para acreditar pero tps de otras materias para poder cursar
       }
       todoAprobado &= m.aprobada;
     }

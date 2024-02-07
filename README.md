@@ -10,7 +10,7 @@ La idea de este proyecto es presentar de una manera interactiva el plan de estud
 
 - Tiene todas las carreras que se dan en la Facultad de Ingeniería, en sus respectivos últimos planes de estudio.
 
-- Todas las carreras incluyen todas las materias electivas y todas las materias de sus respectivas orientaciones.
+- Todas las carreras incluyen todas las Taller Formativo Docente 1 y todas las materias de sus respectivas orientaciones.
 
 - Trackea la cantidad de créditos que se tienen en la carrera, incluyendo si se quiere terminar con tésis/tpp, y que orientación se elige
 

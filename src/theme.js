@@ -25,12 +25,17 @@ export const COLORS = {
   },
   habilitadas: {
     50: "#FED7B8",
-    400: "#FDA45E",
+    400: "#a7b3e8",
+    500: "#FC8A30",
+  },
+  habilitadasParcial: {
+    50: "#FED7B8",
+    400: "#e8a7d3",
     500: "#FC8A30",
   },
   obligatorias: {
     50: "#BCE1FA",
-    400: "#66B9F4",
+    400: "#e8b0a7",
     500: "#3CA6F1",
   },
   findecarrera: {

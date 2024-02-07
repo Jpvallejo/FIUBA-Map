@@ -5,7 +5,13 @@ import CARRERAS from "./carreras";
 import { CREDITOS } from "./constants";
 import Node from "./Node";
 import { COLORS } from "./theme";
-import { accCreditos, accCreditosNecesarios, accProportion, overrideVisJsUpdate, promediar } from "./utils";
+import {
+  accCreditos,
+  accCreditosNecesarios,
+  accProportion,
+  overrideVisJsUpdate,
+  promediar,
+} from "./utils";
 
 const graphObj = {
   nodes: [],
@@ -48,7 +54,7 @@ const useGraph = (loginHook) => {
 
   // Cuando cambia la network, le overrideo el update para que no este redibujandose constantemente
   React.useEffect(() => {
-    if (!network) return
+    if (!network) return;
     overrideVisJsUpdate(network);
   }, [network]);
 
@@ -56,7 +62,6 @@ const useGraph = (loginHook) => {
   React.useEffect(() => {
     if (logged && needsRegister) register();
   }, [user.carrera, user.orientacion, user.finDeCarrera]);
-
 
   ///
   /// Getters
@@ -67,161 +72,248 @@ const useGraph = (loginHook) => {
     NodesTo: (id) => network.getConnectedNodes(id, "to"),
     NeighborNodes: (id) => network.getConnectedNodes(id),
     NeighborEdges: (id) => network.getConnectedEdges(id),
-    Cuatrimestres: () => nodes ? nodes.get({
-      filter: (n) => n.cuatrimestre,
-      fields: ["id", "cuatrimestre"],
-    }) : [],
+    Cuatrimestres: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) => n.cuatrimestre,
+          fields: ["id", "cuatrimestre"],
+        })
+        : [],
     SelectableCategorias: () => {
-      const categorias = nodes ? nodes
-        .distinct("categoria")
-        .filter(
-          (c) =>
-            c !== "CBC" &&
-            c !== "*CBC" &&
-            c !== "Materias Obligatorias" &&
-            c !== "Fin de Carrera (Obligatorio)" &&
-            c !== "Fin de Carrera"
-        ) : []
-      if (categorias.indexOf('Materias Electivas') > 0) {
-        categorias.splice(categorias.indexOf('Materias Electivas'), 1);
-        categorias.unshift('Materias Electivas');
+      const categorias = nodes
+        ? nodes
+          .distinct("categoria")
+          .filter(
+            (c) =>
+              c !== "CBC" &&
+              c !== "*CBC" &&
+              c !== "Materias Obligatorias" &&
+              c !== "Fin de Carrera (Obligatorio)" &&
+              c !== "Fin de Carrera"
+          )
+        : [];
+      if (categorias.indexOf("Taller Formativo Docente 1") > 0) {
+        categorias.splice(categorias.indexOf("Taller Formativo Docente 1"), 1);
+        categorias.unshift("Taller Formativo Docente 1");
       }
-      return categorias
+      return categorias;
     },
     MateriasAprobadasCBC: () =>
-      nodes ? nodes.get({
-        filter: (n) => n.categoria === "*CBC" && n.aprobada && n.nota > 0,
-        fields: ["nota"],
-      }) : [],
+      nodes
+        ? nodes.get({
+          filter: (n) => n.categoria === "*CBC" && n.aprobada && n.nota > 0,
+          fields: ["nota"],
+        })
+        : [],
     MateriasAprobadasSinCBC: () =>
-      nodes ? nodes.get({
-        filter: (n) => n.aprobada && n.nota >= 0 && n.categoria !== "*CBC" && n.categoria !== "CBC",
-        fields: ["nota", "creditos"],
-      }) : [],
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.aprobada &&
+            n.nota >= 0 &&
+            n.categoria !== "*CBC" &&
+            n.categoria !== "CBC",
+          fields: ["nota", "creditos"],
+        })
+        : [],
     MateriasAprobadasSinEquivalenciasSinCBC: () =>
-      nodes ? nodes.get({
-        filter: (n) => n.aprobada && n.nota > 0 && n.categoria !== "*CBC" && n.categoria !== "CBC",
-        fields: ["nota", "creditos"],
-      }) : [],
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.aprobada &&
+            n.nota > 0 &&
+            n.categoria !== "*CBC" &&
+            n.categoria !== "CBC",
+          fields: ["nota", "creditos"],
+        })
+        : [],
     MateriasAprobadasConCBC: () =>
-      nodes ? nodes
-        .get({
+      nodes
+        ? nodes.get({
           filter: (n) => n.aprobada && n.nota > 0,
           fields: ["nota", "creditos"],
-        }) : [],
-    CBC: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          n.categoria === "*CBC",
-      }) : [],
-    Obligatorias: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          n.categoria === "Materias Obligatorias",
-        fields: ["creditos"],
-      }) : [],
-    ObligatoriasAprobadas: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          n.categoria === "Materias Obligatorias" &&
-          n.aprobada &&
-          n.nota >= 0,
-        fields: ["creditos"],
-      }) : [],
-    ElectivasAprobadas: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          n.categoria !== "CBC" &&
-          n.categoria !== "*CBC" &&
-          n.categoria !== "Materias Obligatorias" &&
-          n.categoria !== "Fin de Carrera" &&
-          n.categoria !== "Fin de Carrera (Obligatorio)" &&
-          n.categoria !== user.orientacion?.nombre &&
-          n.aprobada &&
-          n.nota >= 0,
-        fields: ["creditos"],
-      }) : [],
-    OrientacionAprobadas: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          n.categoria === user.orientacion?.nombre &&
-          n.aprobada &&
-          n.nota >= 0,
-        fields: ["creditos"],
-      }) : [],
-    CategoriaOnly: (categoria) => nodes ? nodes
-      .get({
-        filter: (n) => n.categoria === categoria,
-      }) : [],
-    CategoriaRelevantes: (categoria) => nodes ? nodes
-      .get({
-        filter: (n) => n.categoria === categoria && (n.cuatrimestre || n.nota >= -1)
-      }) : [],
-    AllRelevantes: () => nodes ? nodes
-      .get({
-        filter: (n) => n.categoria !== "*CBC" && (n.cuatrimestre || n.nota >= -1)
-      }) : [],
-    Shown: () => nodes ? nodes
-      .get({
-        filter: (n) => !n.hidden
-      }) : [],
-    AllShown: () => nodes ? nodes
-      .get({
-        filter: (n) => !n.hidden &&
-          n.categoria !== "CBC" &&
-          n.categoria !== "*CBC" &&
-          n.categoria !== "Fin de Carrera" &&
-          n.categoria !== "Fin de Carrera (Obligatorio)"
-      }) : [],
-    AllShownWithCuatri: () => nodes ? nodes
-      .get({
-        filter: (n) => n.cuatrimestre &&
-          !n.hidden &&
-          n.categoria !== "CBC" &&
-          n.categoria !== "*CBC"
-      }) : [],
-    AllShownWithoutCuatri: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          !n.cuatrimestre &&
-          !n.hidden &&
-          n.originalLevel &&
-          n.categoria !== "CBC" &&
-          n.categoria !== "*CBC"
-      }) : [],
-    WithoutNivel: () => nodes ? nodes
-      .get({
-        filter: (n) => n.categoria !== "Materias Electivas" &&
-          n.categoria !== "Fin de Carrera" &&
-          n.categoria !== "Fin de Carrera (Obligatorio)" &&
-          !n.hidden &&
-          !n.cuatrimestre &&
-          !n.originalLevel &&
-          n.originalLevel !== 0
-      }) : [],
-    Electivas: () => nodes ? nodes
-      .get({
-        filter: (n) => n.categoria === "Materias Electivas" &&
-          !n.hidden &&
-          !n.cuatrimestre
-      }) : [],
-    Levels: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          !n.hidden &&
-          n.categoria !== "Fin de Carrera" &&
-          n.categoria !== "Fin de Carrera (Obligatorio)",
-        fields: ["level"],
-        type: { level: "number" },
-      }) : [],
-    FinDeCarrera: () => nodes ? nodes
-      .get({
-        filter: (n) =>
-          (n.categoria === "Fin de Carrera" || n.categoria === "Fin de Carrera (Obligatorio)") &&
-          !n.hidden &&
-          !n.cuatrimestre
-      }) : [],
-  }
+        })
+        : [],
+    CBC: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) => n.categoria === "*CBC",
+        })
+        : [],
+    Obligatorias: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) => n.categoria === "Materias Obligatorias",
+          fields: ["creditos"],
+        })
+        : [],
+    ObligatoriasAprobadas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === "Materias Obligatorias" &&
+            n.aprobada &&
+            n.nota >= 0,
+          fields: ["creditos"],
+        })
+        : [],
+    ElectivasAprobadas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria !== "CBC" &&
+            n.categoria !== "*CBC" &&
+            n.categoria !== "Materias Obligatorias" &&
+            n.categoria !== "Fin de Carrera" &&
+            n.categoria !== "Fin de Carrera (Obligatorio)" &&
+            n.categoria !== user.orientacion?.nombre &&
+            n.aprobada &&
+            n.nota >= 0,
+          fields: ["creditos"],
+        })
+        : [],
+    TallerIAprobadas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === "Taller Formativo Docente 1" &&
+            n.aprobada &&
+            n.nota >= 0,
+          fields: ["creditos"],
+        })
+        : [],
+    TallerIIAprobadas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === "Taller Formativo Docente 2" &&
+            n.aprobada &&
+            n.nota >= 0,
+          fields: ["creditos"],
+        })
+        : [],
+    TallerDidacticaAprobadas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === "Taller de Didactica Especifica" &&
+            n.aprobada &&
+            n.nota >= 0,
+          fields: ["creditos"],
+        })
+        : [],
+    OrientacionAprobadas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === user.orientacion?.nombre &&
+            n.aprobada &&
+            n.nota >= 0,
+          fields: ["creditos"],
+        })
+        : [],
+    CategoriaOnly: (categoria) =>
+      nodes
+        ? nodes.get({
+          filter: (n) => n.categoria === categoria,
+        })
+        : [],
+    CategoriaRelevantes: (categoria) =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === categoria && (n.cuatrimestre || n.nota >= -1),
+        })
+        : [],
+    AllRelevantes: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria !== "*CBC" && (n.cuatrimestre || n.nota >= -1),
+        })
+        : [],
+    Shown: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) => !n.hidden,
+        })
+        : [],
+    AllShown: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            !n.hidden &&
+            n.categoria !== "CBC" &&
+            n.categoria !== "*CBC" &&
+            n.categoria !== "Fin de Carrera" &&
+            n.categoria !== "Fin de Carrera (Obligatorio)",
+        })
+        : [],
+    AllShownWithCuatri: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.cuatrimestre &&
+            !n.hidden &&
+            n.categoria !== "CBC" &&
+            n.categoria !== "*CBC",
+        })
+        : [],
+    AllShownWithoutCuatri: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            !n.cuatrimestre &&
+            !n.hidden &&
+            n.originalLevel &&
+            n.categoria !== "CBC" &&
+            n.categoria !== "*CBC",
+        })
+        : [],
+    WithoutNivel: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria !== "Taller Formativo Docente 1" &&
+            n.categoria !== "Fin de Carrera" &&
+            n.categoria !== "Fin de Carrera (Obligatorio)" &&
+            !n.hidden &&
+            !n.cuatrimestre &&
+            !n.originalLevel &&
+            n.originalLevel !== 0,
+        })
+        : [],
+    Electivas: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            n.categoria === "Taller Formativo Docente 1" &&
+            !n.hidden &&
+            !n.cuatrimestre,
+        })
+        : [],
+    Levels: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            !n.hidden &&
+            n.categoria !== "Fin de Carrera" &&
+            n.categoria !== "Fin de Carrera (Obligatorio)",
+          fields: ["level"],
+          type: { level: "number" },
+        })
+        : [],
+    FinDeCarrera: () =>
+      nodes
+        ? nodes.get({
+          filter: (n) =>
+            (n.categoria === "Fin de Carrera" ||
+              n.categoria === "Fin de Carrera (Obligatorio)") &&
+            !n.hidden &&
+            !n.cuatrimestre,
+        })
+        : [],
+  };
 
   ///
   /// Acciones y helpers
@@ -233,7 +325,7 @@ const useGraph = (loginHook) => {
 
   const redraw = () => {
     if (network) {
-      network.redraw()
+      network.redraw();
       network.fit();
     }
   };
@@ -255,17 +347,20 @@ const useGraph = (loginHook) => {
   const cursando = (id, cuatrimestre) => {
     nodes.update(getNode(id).cursando(cuatrimestre));
     actualizar();
-    actualizarNiveles()
+    actualizarNiveles();
   };
 
   const restartGraphCuatris = () => {
-    nodes.update(getters.Cuatrimestres().map((n) => getNode(n.id).cursando(undefined)));
+    nodes.update(
+      getters.Cuatrimestres().map((n) => getNode(n.id).cursando(undefined))
+    );
     actualizar();
-    actualizarNiveles()
+    actualizarNiveles();
   };
 
   const toggleCheckbox = (c) => {
-    const value = !!user.carrera.creditos.checkbox.find((ch) => ch.nombre === c).check;
+    const value = !!user.carrera.creditos.checkbox.find((ch) => ch.nombre === c)
+      .check;
     user.carrera.creditos.checkbox.find((ch) => ch.nombre === c).check = !value;
     actualizar();
   };
@@ -278,7 +373,7 @@ const useGraph = (loginHook) => {
       return node;
     });
     actualizar();
-    actualizarNiveles()
+    actualizarNiveles();
     network.fit();
   };
 
@@ -288,8 +383,8 @@ const useGraph = (loginHook) => {
 
   const actualizar = () => {
     if (!nodes?.carrera) return;
-    updatePromedio()
-    const creditosTotales = updateCreditos()
+    updatePromedio();
+    const creditosTotales = updateCreditos();
     nodes.update(
       nodes.map((n) =>
         getNode(n.id).actualizar({
@@ -312,7 +407,7 @@ const useGraph = (loginHook) => {
   React.useEffect(() => {
     if (!nodes?.carrera || nodes.carrera !== user.carrera?.id) return;
     if (shouldLoadGraph) {
-      setDisplayedNode("")
+      setDisplayedNode("");
       setShouldLoadGraph(false);
       setLoadingGraph(true);
       getGraph(user.padron, user.carrera.id)
@@ -320,14 +415,14 @@ const useGraph = (loginHook) => {
           const toUpdate = [];
           if (metadata.materias) {
             metadata.materias.forEach((m) => {
-              let node = getNode(m.id)
+              let node = getNode(m.id);
               if (!node) return;
               if (m.nota >= -1) {
-                node = node.aprobar(m.nota)
+                node = node.aprobar(m.nota);
                 toUpdate.push(node);
               }
               if (m.cuatrimestre) {
-                node = node.cursando(m.cuatrimestre)
+                node = node.cursando(m.cuatrimestre);
                 toUpdate.push(node);
               }
             });
@@ -341,18 +436,21 @@ const useGraph = (loginHook) => {
             toggleGroup(user.orientacion.nombre);
           nodes.update(toUpdate.flat());
           actualizar();
-          actualizarNiveles()
+          actualizarNiveles();
           showRelevantes();
           if (metadata.optativas) {
-            optativasDispatch({ action: 'override', value: metadata.optativas })
-          };
+            optativasDispatch({
+              action: "override",
+              value: metadata.optativas,
+            });
+          }
           if (metadata.aplazos) setAplazos(metadata.aplazos);
           network.fit();
           setLoadingGraph(false);
         })
         .catch((e) => {
           // aprobar("CBC", 0);
-          actualizarNiveles()
+          actualizarNiveles();
           network.fit();
           setLoadingGraph(false);
         });
@@ -364,7 +462,7 @@ const useGraph = (loginHook) => {
     if (user.orientacion) changeOrientacion(user.orientacion.nombre);
     setDisplayedNode("");
     // aprobar("CBC", 0);
-    actualizarNiveles()
+    actualizarNiveles();
     network.fit();
   }, [nodes, user.finDeCarrera, user.orientacion]);
 
@@ -389,12 +487,35 @@ const useGraph = (loginHook) => {
       const graphEdges = [];
       carrera.graph.forEach((n) => {
         graphNodes.push(new Node(n));
-      })
+      });
       carrera.graph.forEach((n) => {
-        if (n.correlativas)
-          n.correlativas.split("-").forEach((c) => {
-            graphEdges.push({ from: c, to: n.id, smooth: { enabled: true, type: "curvedCW", roundness: 0.1 } });
+        if (n.correlativasAcreditar) {
+          n.correlativasAcreditar.split("-").forEach((c) => {
+            graphEdges.push({
+              from: c,
+              to: n.id,
+              smooth: { enabled: true, type: "curvedCW", roundness: 0.1 },
+            });
           });
+        }
+        if (n.correlativasTp) {
+          n.correlativasTp.split("-").forEach((c) => {
+            graphEdges.push({
+              from: c,
+              to: n.id,
+              smooth: { enabled: true, type: "curvedCW", roundness: 0.1 },
+            });
+          });
+        }
+        if (n.correlativasFinal) {
+          n.correlativasFinal.split("-").forEach((c) => {
+            graphEdges.push({
+              from: c,
+              to: n.id,
+              smooth: { enabled: true, type: "curvedCW", roundness: 0.1 },
+            });
+          });
+        }
         if (n.requiere)
           graphEdges.push({ from: "CBC", to: n.id, color: "transparent" });
       });
@@ -421,9 +542,7 @@ const useGraph = (loginHook) => {
 
   const groupStatus = (categoria) => {
     const status = [
-      ...new Set(
-        getters.CategoriaOnly(categoria).map((n) => n.hidden)
-      ),
+      ...new Set(getters.CategoriaOnly(categoria).map((n) => n.hidden)),
     ];
     if (status.length === 1) {
       return status[0] ? "hidden" : "shown";
@@ -444,22 +563,20 @@ const useGraph = (loginHook) => {
         if (group.length) break;
       // eslint-disable-next-line no-fallthrough
       case "partial":
-        group = getters.CategoriaOnly(categoria)
-          .map((n) => {
-            const node = getNode(n.id);
-            node.hidden = false;
-            return node;
-          });
+        group = getters.CategoriaOnly(categoria).map((n) => {
+          const node = getNode(n.id);
+          node.hidden = false;
+          return node;
+        });
         break;
       case "shown":
-        group = getters.CategoriaOnly(categoria)
-          .map((n) => {
-            const node = getNode(n.id);
-            node.hidden = true;
-            return node;
-          });
-        if (group.map(n => n.id).includes(network.getSelectedNodes()[0])) {
-          deselectNode()
+        group = getters.CategoriaOnly(categoria).map((n) => {
+          const node = getNode(n.id);
+          node.hidden = true;
+          return node;
+        });
+        if (group.map((n) => n.id).includes(network.getSelectedNodes()[0])) {
+          deselectNode();
         }
         break;
       default:
@@ -480,7 +597,7 @@ const useGraph = (loginHook) => {
 
     nodes.update(relevantes);
     actualizar();
-    actualizarNiveles()
+    actualizarNiveles();
     network.fit();
   };
 
@@ -492,7 +609,7 @@ const useGraph = (loginHook) => {
         "Aprobadas",
         "En Final",
         "Habilitadas",
-        "Materias Electivas",
+        "Taller Formativo Docente 1",
         ...graph.groups,
       ];
       if (nodeA.creditos && nodeB.creditos && nodeA.group === nodeB.group) {
@@ -512,57 +629,67 @@ const useGraph = (loginHook) => {
       }
       n.level = lastLevel + addLevel;
     });
-    return electivas
+    return electivas;
   };
 
-
   const actualizarNiveles = () => {
-    const toUpdate = []
-    let lastLevel = Math.max(...getters.AllShown().map(n => n.level))
+    const toUpdate = [];
+    let lastLevel = Math.max(...getters.AllShown().map((n) => n.level));
 
-    const conCuatri = getters.AllShownWithCuatri()
-    const firstCuatri = Math.min(...conCuatri.map(n => n.cuatrimestre))
+    const conCuatri = getters.AllShownWithCuatri();
+    const firstCuatri = Math.min(...conCuatri.map((n) => n.cuatrimestre));
 
     if (conCuatri.length) {
-      lastLevel = 0
-      toUpdate.push(...conCuatri.map((n) => {
-        n.level = ((n.cuatrimestre - firstCuatri) / 0.5) + lastLevel + 1;
-        return n;
-      }))
-      if (toUpdate.length) lastLevel = Math.max(...toUpdate.map(n => n.level))
-      const sinCuatri = getters.AllShownWithoutCuatri()
-      if (sinCuatri.length) {
-        const firstOffset = Math.min(...sinCuatri.map(n => n.originalLevel))
-        toUpdate.push(...sinCuatri.map((n) => {
-          const offset = isFinite(firstOffset) && n.originalLevel ? n.originalLevel - firstOffset : 0
-          n.level = lastLevel + offset + 1;
+      lastLevel = 0;
+      toUpdate.push(
+        ...conCuatri.map((n) => {
+          n.level = (n.cuatrimestre - firstCuatri) / 0.5 + lastLevel + 1;
           return n;
-        }))
-        if (toUpdate.length) lastLevel = Math.max(...toUpdate.map(n => n.level))
+        })
+      );
+      if (toUpdate.length)
+        lastLevel = Math.max(...toUpdate.map((n) => n.level));
+      const sinCuatri = getters.AllShownWithoutCuatri();
+      if (sinCuatri.length) {
+        const firstOffset = Math.min(...sinCuatri.map((n) => n.originalLevel));
+        toUpdate.push(
+          ...sinCuatri.map((n) => {
+            const offset =
+              isFinite(firstOffset) && n.originalLevel
+                ? n.originalLevel - firstOffset
+                : 0;
+            n.level = lastLevel + offset + 1;
+            return n;
+          })
+        );
+        if (toUpdate.length)
+          lastLevel = Math.max(...toUpdate.map((n) => n.level));
       }
     }
 
-    const noElectivasPeroSinNivel = getters.WithoutNivel()
+    const noElectivasPeroSinNivel = getters.WithoutNivel();
     toUpdate.push(...balanceSinNivel(noElectivasPeroSinNivel, lastLevel));
-    if (toUpdate.length) lastLevel = Math.max(...toUpdate.map(n => n.level))
+    if (toUpdate.length) lastLevel = Math.max(...toUpdate.map((n) => n.level));
 
-    const electivas = getters.Electivas()
+    const electivas = getters.Electivas();
     toUpdate.push(...balanceSinNivel(electivas, lastLevel));
 
-    if (toUpdate.length) lastLevel = Math.max(...toUpdate.map(n => n.level))
+    if (toUpdate.length) lastLevel = Math.max(...toUpdate.map((n) => n.level));
     if (!isFinite(lastLevel)) {
-      lastLevel = Math.max(...getters.Levels().map((n) => n.level))
+      lastLevel = Math.max(...getters.Levels().map((n) => n.level));
     }
 
-    const findecarrera = getters.FinDeCarrera()
-    toUpdate.push(...findecarrera.map((n) => {
-      n.level = lastLevel + 1;
-      return n
-    }))
+    const findecarrera = getters.FinDeCarrera();
+    toUpdate.push(
+      ...findecarrera.map((n) => {
+        n.level = lastLevel + 1;
+        return n;
+      })
+    );
 
-    nodes.update(toUpdate)
+    nodes.update(toUpdate);
     network.body.emitter.emit("_dataChanged");
-  }
+  };
 
   ///
   /// Logica de creditos y optativas
@@ -575,38 +702,41 @@ const useGraph = (loginHook) => {
     isRecibido: false,
   });
 
-  const [optativas, optativasDispatch] = React.useReducer((prevstate, dispatched) => {
-    let newstate = prevstate;
-    const { action, value } = dispatched
-    switch (action) {
-      case 'override':
-        newstate = value;
-        break;
-      case 'create':
-        const lastOptativaId = prevstate.map((o) => o.id).pop() || 0;
-        newstate = [
-          ...newstate,
-          {
-            id: lastOptativaId + 1,
-            nombre: "Materia Optativa",
-            creditos: 4
-          }
-        ]
-        break;
-      case 'remove':
-        newstate = prevstate.filter((o) => o.id !== value.id)
-        break;
-      case 'edit':
-        newstate = [
-          ...prevstate.filter((o) => o.id !== value.id),
-          { ...value }
-        ]
-        break;
-      default:
-        return newstate;
-    }
-    return newstate;
-  }, []);
+  const [optativas, optativasDispatch] = React.useReducer(
+    (prevstate, dispatched) => {
+      let newstate = prevstate;
+      const { action, value } = dispatched;
+      switch (action) {
+        case "override":
+          newstate = value;
+          break;
+        case "create":
+          const lastOptativaId = prevstate.map((o) => o.id).pop() || 0;
+          newstate = [
+            ...newstate,
+            {
+              id: lastOptativaId + 1,
+              nombre: "Materia Optativa",
+              creditos: 4,
+            },
+          ];
+          break;
+        case "remove":
+          newstate = prevstate.filter((o) => o.id !== value.id);
+          break;
+        case "edit":
+          newstate = [
+            ...prevstate.filter((o) => o.id !== value.id),
+            { ...value },
+          ];
+          break;
+        default:
+          return newstate;
+      }
+      return newstate;
+    },
+    []
+  );
 
   const updateCreditos = () => {
     if (!nodes?.carrera) return;
@@ -617,37 +747,62 @@ const useGraph = (loginHook) => {
       return user.carrera.creditos;
     };
 
-    const cbc = getters.CBC()
-    creditos.push({
-      ...CREDITOS['CBC'],
-      creditosNecesarios: cbc.reduce(accCreditos, 0),
-      creditos: cbc.reduce(accCreditos, 0),
-      nmaterias: cbc.length,
-    });
 
-    const obligatorias = getters.ObligatoriasAprobadas()
+    const obligatorias = getters.ObligatoriasAprobadas();
     creditos.push({
-      ...CREDITOS['Obligatorias'],
+      ...CREDITOS["Obligatorias"],
       creditosNecesarios: user.carrera.creditos.obligatorias,
       nmaterias: obligatorias.length,
       totalmaterias: getters.Obligatorias().length,
       creditos: obligatorias.reduce(accCreditos, 0),
     });
 
-    const electivas = getters.ElectivasAprobadas()
-    creditos.push({
-      ...CREDITOS['Electivas'],
-      creditosNecesarios: isNaN(getCorrectCreditos()?.electivas)
-        ? getCorrectCreditos()?.electivas[user.finDeCarrera?.id]
-        : getCorrectCreditos()?.electivas,
+    // const electivas = getters.ElectivasAprobadas();
+    // creditos.push({
+    //   ...CREDITOS["Electivas"],
+    //   creditosNecesarios: isNaN(getCorrectCreditos()?.electivas)
+    //     ? getCorrectCreditos()?.electivas[user.finDeCarrera?.id]
+    //     : getCorrectCreditos()?.electivas,
 
-      nmaterias: electivas.length,
+    //   nmaterias: electivas.length,
+    //   creditos:
+    //     electivas.reduce(accCreditos, 0) + optativas.reduce(accCreditos, 0),
+    // });
+    const tallerI = getters.TallerIAprobadas();
+    creditos.push({
+      ...CREDITOS["FormativoDocente1"],
+      creditosNecesarios: isNaN(getCorrectCreditos()?.formativoI)
+        ? getCorrectCreditos()?.formativoI[user.finDeCarrera?.id]
+        : getCorrectCreditos()?.formativoI,
+
+      nmaterias: tallerI.length,
       creditos:
-        electivas.reduce(accCreditos, 0) +
-        optativas.reduce(accCreditos, 0),
+        tallerI.reduce(accCreditos, 0),
+    });
+    const tallerII = getters.TallerIIAprobadas();
+    creditos.push({
+      ...CREDITOS["FormativoDocente2"],
+      creditosNecesarios: isNaN(getCorrectCreditos()?.formativoII)
+        ? getCorrectCreditos()?.formativoII[user.finDeCarrera?.id]
+        : getCorrectCreditos()?.formativoII,
+
+      nmaterias: tallerII.length,
+      creditos:
+        tallerII.reduce(accCreditos, 0),
+    });
+    const tallerDidactica = getters.TallerDidacticaAprobadas();
+    creditos.push({
+      ...CREDITOS["DidacticaEspecifica"],
+      creditosNecesarios: isNaN(getCorrectCreditos()?.didacticaEspecifica)
+        ? getCorrectCreditos()?.didacticaEspecifica[user.finDeCarrera?.id]
+        : getCorrectCreditos()?.didacticaEspecifica,
+
+      nmaterias: tallerDidactica.length,
+      creditos:
+      tallerDidactica.reduce(accCreditos, 0),
     });
 
-    const orientacion = getters.OrientacionAprobadas()
+    const orientacion = getters.OrientacionAprobadas();
     if (
       user.carrera.eligeOrientaciones &&
       user.orientacion &&
@@ -678,29 +833,18 @@ const useGraph = (loginHook) => {
       });
     }
 
-    if (user.carrera.creditos.materias)
-      user.carrera.creditos.materias.forEach((m) => {
-        const node = getNode(m.id);
-        creditos.push({
-          nombre: node.materia,
-          nombrecorto: m.nombrecorto,
-          color: m.color,
-          bg: m.bg,
-          creditosNecesarios: node.creditos,
-          creditos: node.aprobada ? node.creditos : 0,
-        });
-      });
-
-    if (user.finDeCarrera) {
-      const node = getNode(user.finDeCarrera.materia);
-      creditos.push({
-        ...CREDITOS['Fin de Carrera'],
-        nombre: node.materia,
-        nombrecorto: user.finDeCarrera.id,
-        creditosNecesarios: node.creditos,
-        creditos: node.aprobada ? node.creditos : 0,
-      });
-    }
+    // if (user.carrera.creditos.materias)
+    //   user.carrera.creditos.materias.forEach((m) => {
+    //     const node = getNode(m.id);
+    //     creditos.push({
+    //       nombre: node.materia,
+    //       nombrecorto: m.nombrecorto,
+    //       color: m.color,
+    //       bg: m.bg,
+    //       creditosNecesarios: node.creditos,
+    //       creditos: node.aprobada ? node.creditos : 0,
+    //     });
+    //   });
 
     const totalNecesarios = creditos.reduce(accCreditosNecesarios, 0);
     creditos.forEach((c) => {
@@ -712,11 +856,17 @@ const useGraph = (loginHook) => {
     if (fullProportion > 10) creditos[1].proportion -= fullProportion - 10;
     else if (fullProportion < 10) creditos[1].proportion += 10 - fullProportion;
 
-    const aprobadas = [...getters.MateriasAprobadasSinCBC(), ...cbc, ...optativas]
-    const creditosTotales = aprobadas.reduce(accCreditos, 0)
-    const allCreditosAprobados = creditos.every(c => c.creditos >= c.creditosNecesarios);
-    const creditosTotalesNecesarios = user.carrera?.creditos.total
-    const isRecibido = creditosTotales >= user.carrera?.creditos.total && allCreditosAprobados
+    const aprobadas = [
+      ...getters.MateriasAprobadasSinCBC(),
+      ...optativas,
+    ];
+    const creditosTotales = aprobadas.reduce(accCreditos, 0);
+    const allCreditosAprobados = creditos.every(
+      (c) => c.creditos >= c.creditosNecesarios
+    );
+    const creditosTotalesNecesarios = user.carrera?.creditos.total;
+    const isRecibido =
+      creditosTotales >= user.carrera?.creditos.total && allCreditosAprobados;
 
     setStats({
       creditosTotales,
@@ -724,54 +874,56 @@ const useGraph = (loginHook) => {
       isRecibido,
     });
 
-    setCreditos(creditos)
+    setCreditos(creditos);
 
-    return creditosTotales
+    return creditosTotales;
   };
 
   ///
   /// Logica de aplazos y promedio
   ///
 
-  const [aplazos, setAplazos] = React.useState(0)
+  const [aplazos, setAplazos] = React.useState(0);
   const [promedio, setPromedio] = React.useState({
     promedio: 0,
     promedioConAplazos: 0,
     promedioConCBC: 0,
-  })
+  });
 
   const updatePromedio = () => {
     setPromedio({
       promedio: promediar(getters.MateriasAprobadasSinEquivalenciasSinCBC()),
       promedioConAplazos: promediar([
         ...getters.MateriasAprobadasSinEquivalenciasSinCBC(),
-        ...Array(aplazos).fill({ nota: 2 })
+        ...Array(aplazos).fill({ nota: 2 }),
       ]),
       promedioConCBC: promediar(getters.MateriasAprobadasConCBC()),
-    })
-  }
+    });
+  };
 
   // Si cambian los aplazos, hay que actualizar el objeto promedio
   React.useEffect(() => {
-    updatePromedio()
-  }, [aplazos])
+    updatePromedio();
+  }, [aplazos]);
 
   ///
   /// Logica de interacción con el grafo
   ///
 
   const blurOthers = (id) => {
-    const node = getNode(id)
+    const node = getNode(id);
     if (!node) return;
 
-    let neighborNodes = getters.NeighborNodes(id)
+    let neighborNodes = getters.NeighborNodes(id);
     if (node.requiere) {
       neighborNodes = neighborNodes.filter((node) => node !== "CBC");
     }
 
     const allOtherNodes = nodes.get({
       filter: function (n) {
-        return !neighborNodes.includes(n.id) && !(n.id === node.id) && !n.hidden;
+        return (
+          !neighborNodes.includes(n.id) && !(n.id === node.id) && !n.hidden
+        );
       },
     });
     nodes.update(
@@ -781,22 +933,24 @@ const useGraph = (loginHook) => {
       })
     );
 
-    const neighborEdgesIds = getters.NeighborEdges(id)
+    const neighborEdgesIds = getters.NeighborEdges(id);
     const neighborEdges = edges.get({
       filter: function (edge) {
-        return neighborEdgesIds.includes(edge.id) && edge.color !== "transparent"
+        return (
+          neighborEdgesIds.includes(edge.id) && edge.color !== "transparent"
+        );
       },
     });
     edges.update(
       neighborEdges.map((edge) => {
-        edge.hoverWidth = 2
-        edge.selectionWidth = 2
+        edge.hoverWidth = 2;
+        edge.selectionWidth = 2;
         edge.arrows = { to: { scaleFactor: 0.7 } };
         edge.color = { opacity: 1 };
         return edge;
       })
     );
-  }
+  };
 
   const unblurAll = () => {
     nodes.update(
@@ -808,31 +962,31 @@ const useGraph = (loginHook) => {
 
     const neighborEdges = edges.get({
       filter: function (edge) {
-        return edge.color !== "transparent" && edge.selectionWidth === 2
+        return edge.color !== "transparent" && edge.selectionWidth === 2;
       },
     });
     edges.update(
       neighborEdges.map((edge) => {
-        edge.selectionWidth = undefined
-        edge.hoverWidth = undefined
-        edge.arrows = undefined
-        edge.color = undefined
+        edge.selectionWidth = undefined;
+        edge.hoverWidth = undefined;
+        edge.arrows = undefined;
+        edge.color = undefined;
         return edge;
       })
     );
-  }
+  };
 
   const deselectNode = () => {
-    unblurAll()
+    unblurAll();
     setDisplayedNode("");
     network.selectNodes([]);
-  }
+  };
 
   const selectNode = (id) => {
-    unblurAll()
-    blurOthers(id)
+    unblurAll();
+    blurOthers(id);
     setDisplayedNode(id);
-  }
+  };
 
   let hovertimer = undefined;
   const events = {
@@ -840,7 +994,7 @@ const useGraph = (loginHook) => {
       // click: abre/cierra CBC
       // click en ningun nodo: limpiar blur/selection
       if (!e.nodes.length) {
-        deselectNode()
+        deselectNode();
         return;
       }
       const id = e.nodes[0];
@@ -878,23 +1032,23 @@ const useGraph = (loginHook) => {
     hoverNode: (e) => {
       const id = e.node;
       if (network.getSelectedNodes().length) {
-        return
+        return;
       }
       hovertimer = setTimeout(() => {
-        selectNode(id)
-        blurOthers(id)
+        selectNode(id);
+        blurOthers(id);
       }, 300);
     },
     blurNode: () => {
       if (network.getSelectedNodes().length) {
-        return
+        return;
       }
       if (hovertimer) {
         clearTimeout(hovertimer);
         hovertimer = undefined;
       } else {
-        deselectNode()
-        unblurAll()
+        deselectNode();
+        unblurAll();
       }
     },
     selectNode: (e) => {
@@ -903,10 +1057,9 @@ const useGraph = (loginHook) => {
         clearTimeout(hovertimer);
         hovertimer = undefined;
       }
-      selectNode(id)
+      selectNode(id);
     },
   };
-
 
   // Cambiar las optativas actualiza los creditos que actualiza el mapa...
   // Cambiar el colorMode tiene que actualizar el texto de las materias con texto afuera

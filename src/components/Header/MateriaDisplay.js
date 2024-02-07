@@ -2,7 +2,6 @@
 import React from "react";
 import { GraphContext } from "../../Contexts";
 import { getCurrentCuatri } from "../../utils";
-import MateriaControl from "./MateriaControl";
 import MateriaStatus from "./MateriaStatus";
 
 const MateriaDisplay = () => {
@@ -73,7 +72,6 @@ const MateriaDisplay = () => {
   return (
     <>
       <MateriaStatus />
-      <MateriaControl />
     </>
   );
 };

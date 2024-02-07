@@ -1,8 +1,11 @@
 import { COLORS } from "./theme";
 import { promediar } from "./utils";
 
-const FONT_AFUERA = ["CBC", "*CBC"]
-const ALWAYS_SHOW = ["Materias Obligatorias", "CBC", "Fin de Carrera (Obligatorio)"]
+const FONT_AFUERA = ["CBC", "*CBC"];
+const ALWAYS_SHOW = [
+  "Materias Obligatorias",
+  "Fin de Carrera (Obligatorio)",
+];
 
 function breakWords(string) {
   let broken = "";
@@ -23,8 +26,8 @@ class Node {
     this.nota = -2;
     this.cuatrimestre = undefined;
     this.originalLevel = this.level;
-    this.level = this.level ?? -3
-    this.hidden = !ALWAYS_SHOW.includes(this.categoria)
+    this.level = this.level ?? -3;
+    this.hidden = !ALWAYS_SHOW.includes(this.categoria);
   }
 
   aprobar(nota) {
@@ -52,40 +55,40 @@ class Node {
     let todoAprobado = true;
     for (let id of from) {
       const m = getNode(id);
-      todoAprobado &= m.aprobada;
-    }
-    if (this.requiere) {
-      if (this.requiereCBC) {
-        todoAprobado &= creditosTotales >= this.requiere;
-      } else {
-        todoAprobado &= (creditosTotales - 38) >= this.requiere
+      if (currentNode.correlativasFinal?.split("-").includes(id)) {
+        todoAprobado &= m.aprobada;
       }
-    };
+      if (currentNode.correlativasAcreditar?.split("-").includes(id)) {
+        todoAprobado &= m.aprobada;
+      }
+      if (currentNode.correlativasTp?.split("-").includes(id)) {
+        todoAprobado &= m.aprobada || m.nota === -1;
+      }
+    }
     return todoAprobado;
   }
 
   isHabilitadaParcial(ctx) {
-    const { getters, getNode, creditosTotales } = ctx;
+    const { getters, getNode } = ctx;
     const currentNode = getNode(this.id);
     const from = getters.NodesFrom(this.id);
+    if (currentNode.id === "39") {
+      debugger;
+    }
     let todoAprobado = true;
     for (let id of from) {
       const m = getNode(id);
-      if(currentNode.correlativas?.split("-").includes(id)){
-        console.log("a");
-        // si esta en la columna de final para cursar tiene que estar aprobada.
-        // si esta en la columna de final para acreditar, tiene que estar en final
-        // si esta en la columna de tp para cursar, tiene que estar en final -- AGREGAR TAMBIEN EN IS HABILITADA porque puede que necesite algunos finales para acreditar pero tps de otras materias para poder cursar
+      const enFinal = m.group === "En Final";
+      if (currentNode.correlativasFinal?.split("-").includes(id)) {
+        todoAprobado &= m.aprobada;
       }
-      todoAprobado &= m.aprobada;
+      if (currentNode.correlativasAcreditar?.split("-").includes(m.id)) {
+        todoAprobado = todoAprobado && (m.aprobada || enFinal);
+      }
+      if (currentNode.correlativasTp?.split("-").includes(m.id)) {
+        todoAprobado = todoAprobado && (m.aprobada || enFinal);
+      }
     }
-    if (this.requiere) {
-      if (this.requiereCBC) {
-        todoAprobado &= creditosTotales >= this.requiere;
-      } else {
-        todoAprobado &= (creditosTotales - 38) >= this.requiere
-      }
-    };
     return todoAprobado;
   }
 
@@ -95,7 +98,7 @@ class Node {
     if (this.aprobada && this.nota >= 0) grupoDefault = "Aprobadas";
     else if (this.nota === -1) grupoDefault = "En Final";
     else if (this.isHabilitada(ctx)) grupoDefault = "Habilitadas";
-    else if (this.isHabilitadaParcial(ctx)) grupoDefault = "HabilitadaParcial";
+    else if (this.isHabilitadaParcial(ctx)) grupoDefault = "Habilitada Parcial";
     this.group = grupoDefault;
 
     let labelDefault = breakWords(this.materia);
@@ -115,7 +118,7 @@ class Node {
 
     if (this.categoria === "CBC") {
       const materiasCBC = getters.MateriasAprobadasCBC();
-      const promedioCBC = promediar(materiasCBC)
+      const promedioCBC = promediar(materiasCBC);
       if (showLabels && promedioCBC) this.label += "\n[" + promedioCBC + "]";
       if (materiasCBC.length === 6) this.color = COLORS.aprobadas[400];
       else this.color = COLORS.aprobadas[100];
